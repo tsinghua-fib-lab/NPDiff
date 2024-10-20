@@ -8,13 +8,7 @@ from einops import rearrange
 
 class EarlyStopping():
     def __init__(self, patience=7, delta=0, path='model.pth', verbose=False):
-        """
-        初始化 EarlyStopping 实例
-        :param patience: 在验证损失不再改善的情况下允许的训练次数
-        :param delta: 验证损失的最低改善量
-        :param path: 保存最佳模型的路径
-        :param verbose: 是否打印详细信息
-        """
+
         self.patience = patience
         self.delta = delta
         self.path = path
@@ -42,7 +36,7 @@ class EarlyStopping():
             self.counter = 0
 
     def save_checkpoint(self, val_loss, model):
-        """保存模型到指定路径"""
+
         if self.verbose:
             print(f'Validation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}).  Saving model ...')
         torch.save(model.state_dict(), self.path)
