@@ -52,5 +52,7 @@ There are some new parameters to specify:
 
 - `history_len` specifies the input sequence length.
 - `predict_len` specifies the prediction horizon.
-- `model` specifies different denoising networks, which can be selected from ["CSDI","ConvLSTM","STID"]
+- `model` specifies different denoising networks. 
+- `Num_Comp` specifies the number of periodic dynamic components.
+- `Lambda` specifies noise fusion coefficient.
 
