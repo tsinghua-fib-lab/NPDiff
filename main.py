@@ -24,7 +24,7 @@ def set_random_seed(seed: int):
 
 
 parser = argparse.ArgumentParser(description="NPDiff")
-parser.add_argument("--model",type=str, default="ConvLSTM" )
+parser.add_argument("--model",type=str, default="ConvLSTM",help="['CSDI','ConvLSTM','STID']")
 parser.add_argument("--data_name", type=str, default="MobileBJ")
 parser.add_argument('--device', default='cuda:1', help='Device for Attack')
 parser.add_argument("--seed", type=int, default=1)
