@@ -12,18 +12,12 @@ import numpy as np
 
 
 def set_random_seed(seed: int):
-    """
-    固定随机种子以确保结果的可重复性
-
-    参数:
-    seed (int): 要设置的随机种子
-    """
-    random.seed(seed)                        # Python 随机数生成器
-    np.random.seed(seed)                     # NumPy 随机数生成器
-    torch.manual_seed(seed)                  # PyTorch 随机数生成器（CPU）
+    random.seed(seed)                        
+    np.random.seed(seed)                     
+    torch.manual_seed(seed)                 
     if torch.cuda.is_available():
-        torch.cuda.manual_seed(seed)         # PyTorch 随机数生成器（当前 GPU）
-        torch.cuda.manual_seed_all(seed)     # PyTorch 随机数生成器（所有 GPU）
+        torch.cuda.manual_seed(seed)         
+        torch.cuda.manual_seed_all(seed)     
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
