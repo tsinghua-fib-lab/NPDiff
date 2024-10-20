@@ -22,7 +22,7 @@ NPDiff consists of two main parts: (i) extraction of two key dynamics inherent i
 ![OverallArchi](./assets/fig2.jpg "")
 
 ## Data
-We use multiple datasets to demonstrate the effectiveness of NPDiff. You can find the raw datasets in the `./data/mobile_npy/` directory. Before running the experiments, you need to pre-process all data via:
+We use four mobile traffic datasets to demonstrate the effectiveness of NPDiff. You can find the raw datasets in the `./data/mobile_npy/` directory. Before running the experiments, you need to pre-process all data via:
 ```bash 
 cd /path/to/your/project
 bash scripts/data_prepare.sh
