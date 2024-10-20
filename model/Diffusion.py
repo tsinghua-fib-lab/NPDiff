@@ -271,7 +271,6 @@ class Diff_Forecasting( Diff_base):
             gt_mask,
             prior
         ) = self.process_data(batch)
-        # 从370维选取64来训练
 
     
         cond_mask = gt_mask
