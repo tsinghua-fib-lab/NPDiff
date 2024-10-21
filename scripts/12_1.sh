@@ -1,4 +1,5 @@
-# MobileBJ#********* periodic dynamics *********#
+#********* periodic dynamics *********#
+# MobileBJ
 python main.py --batch_size 8 --device "cuda:2" --Num_Comp 0 --Lambda 0.5 --model "CSDI" --target_dim 672 --history_len 12 --predict_len 1 --data_name "MobileBJ" 
 python main.py --batch_size 8 --device "cuda:2" --Num_Comp 0 --Lambda 0.5 --model "STID" --target_dim 672 --history_len 12 --predict_len 1 --data_name "MobileBJ" 
 
