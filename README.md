@@ -41,7 +41,7 @@ bash scripts/data_prepare.sh
 
 ## Model Training
 
-We provide the scripts under the folder `./scripts/`. You can train NPDiff(CSDI) with the MobileBJ dataset as the following examples:
+We provide the scripts under the folder `./scripts/`. You can train NPDiff with the MobileBJ dataset as the following examples:
 
 ```bash 
 python main.py --batch_size 8 --device "cuda:2" --Num_Comp 0 --Lambda 0.5 --model "CSDI" --target_dim 672 --history_len 12 --predict_len 12 --data_name "MobileBJ" 

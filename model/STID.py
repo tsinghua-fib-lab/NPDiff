@@ -144,7 +144,7 @@ class STID(nn.Module):
 
         self.Lambda = args.Lambda
         self.his_len=args.history_len
-        self.local_prior=args.local_prior
+        self.local_prior=args.local_dynamics
 
 
 

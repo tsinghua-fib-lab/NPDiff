@@ -30,9 +30,9 @@ def generate_data(args: argparse.Namespace):
     ts_file_path=args.ts_file_path
 
     # read data
-    data = np.load(data_file_path) # N,H,W
+    data = np.load(data_file_path) # T,K,C
 
-    ts=np.load(ts_file_path) # N,2
+    ts=np.load(ts_file_path) # T,2
     time_step=ts
     print("time stamp shape: {0}".format(time_step.shape))
     print("raw time series shape: {0}".format(data.shape))

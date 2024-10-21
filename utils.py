@@ -7,8 +7,7 @@ from einops import rearrange
 
 
 class EarlyStopping():
-    def __init__(self, patience=7, delta=0, path='model.pth', verbose=False):
-
+    def __init__(self, patience=5, delta=0, path='model.pth', verbose=False):
         self.patience = patience
         self.delta = delta
         self.path = path
@@ -36,7 +35,6 @@ class EarlyStopping():
             self.counter = 0
 
     def save_checkpoint(self, val_loss, model):
-
         if self.verbose:
             print(f'Validation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}).  Saving model ...')
         torch.save(model.state_dict(), self.path)
@@ -195,22 +193,6 @@ def evaluate(model_name,history_len,model, test_loader,target,scaler,nsample=10)
                 predict=scaler.inverse_transform(predict)
             for n in range(nsample):
                 pre_data=predict[:,n,:,:]
-                rmse_total+=rmse(pre_data,target)
-                mae_total+=mae(pre_data,target)
-                smape_total+=smape(pre_data,target)
-                rmse_loss.append(rmse(pre_data,target))
-                mae_loss.append(mae(pre_data,target))
-        elif model_name=='ConvLSTM':
-            target=rearrange(target,'b l h w -> b h w l')
-            with tqdm(test_loader, mininterval=5.0, maxinterval=50.0) as it:
-                for batch_no, test_batch in enumerate(it, start=1):
-                    output = model.evaluate(test_batch, nsample) # B, n_samples, K, L
-                    predict.append(output[:,:,:,:,history_len:])
-
-                predict=torch.cat(predict,dim=0) # N, n_samples, K, L
-                predict=scaler.inverse_transform(predict) # N, n_samples, H,W, L
-            for n in range(nsample):
-                pre_data=predict[:,n,:,:,:]
                 rmse_total+=rmse(pre_data,target)
                 mae_total+=mae(pre_data,target)
                 smape_total+=smape(pre_data,target)

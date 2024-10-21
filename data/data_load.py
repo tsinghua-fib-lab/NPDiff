@@ -53,12 +53,13 @@ class STDataset(Dataset):
         self._check_if_file_exists(data_file_path, index_file_path,scaler_file_path)
         # read raw data (normalized)
         data = load_pkl(data_file_path)
-        processed_data = data['processed_data'] # n,h,w
+        processed_data = data['processed_data'] # T,K,C
         
-        L,H,W=processed_data.shape
-        num_samples = L - (history_len + predict_len) + 1
+
+        T,K,C=processed_data.shape
+        num_samples = T - (history_len + predict_len) + 1
         train_num_short = round(num_samples * 0.6)
-        data_train=processed_data[:train_num_short] # l,h,w
+        data_train=processed_data[:train_num_short] # T,K,C
 
         Points = 24 if data_name != "MobileSH16" else 96
 
@@ -97,16 +98,16 @@ class STDataset(Dataset):
                     prior = np.fft.ifft(prior_fft).real
                     prior_results.append(prior)
 
-        prior = np.mean(np.array(prior_results).reshape(-1,H*W,L_series), axis=0) # H*W,L
-        prior=prior.reshape(H,W,L_series).transpose(2,0,1) # L,H,W
-        prior= np.tile(prior, (int(np.ceil(L / prior.shape[0])), 1, 1))[:L, :, :] # L,H,W
+        prior = np.mean(np.array(prior_results).reshape(-1,K*C,L_series), axis=0) # K*C,T
+        prior=prior.reshape(K,C,L_series).transpose(2,0,1) # T,K,C
+        prior= np.tile(prior, (int(np.ceil(T / prior.shape[0])), 1, 1))[:T, :, :] # T,K,C
 
         self.prior=torch.from_numpy(prior).float().to(DEVICE)
         assert prior.shape==processed_data.shape ,f"Shape mismatch: prior shape: {prior.shape}, processed_data shape: {processed_data.shape}"
         self.data = torch.from_numpy(processed_data).float().to(DEVICE)
         ts = data['ts'] # n
         self.ts= torch.from_numpy(ts).float().to(DEVICE)
-        target_mask=torch.ones(predict_len+history_len,H,W) # l,h,w
+        target_mask=torch.ones(predict_len+history_len,K,C) 
         target_mask[-predict_len:,:,:]=0
         self.target_mask=target_mask.float().to(DEVICE)
         # read index
@@ -184,16 +185,14 @@ class STDataset(Dataset):
             data=torch.cat((history_data, future_data), dim=0)
             prior_data=torch.cat((self.prior[history_index], self.prior[idx[1], idx[2]]), dim=0)
 
-        # mask l,h,w
         target_mask=self.target_mask
-        # data l,h,w
-        # ts   l,2
+
 
         s = {
-            'observed_data': data, # K,L  ->  [24, 32, 32]
-            'gt_mask': target_mask,# K,L  ->  [24, 32, 32]
-            'timepoints': ts,      # L    ->  [24,2]
-            'prior':prior_data     # L,H,W ->  [24, 32, 32]
+            'observed_data': data, # T,K,C 
+            'gt_mask': target_mask, 
+            'timepoints': ts,        
+            'prior':prior_data     # T,K,C 
         }
         return  s
 

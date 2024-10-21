@@ -82,28 +82,20 @@ class  Diff_base(nn.Module):
         self,prior,observed_data, cond_mask, side_info, is_train,set_t=-1
     ):
         if(self.model_name=="CSDI") or (self.model_name=="STID"):
-            B, _, _ = observed_data.shape # B,H*W,L
+            B, _, _ = observed_data.shape # B,K*C,T
             if is_train != 1:  # for validation
                 t = (torch.ones(B) * set_t).long().to(self.device)
             else:
                 t = torch.randint(0, self.num_steps, [B]).to(self.device)
             current_alpha = self.alpha_torch[t]  # (B,1,1)
             noise = torch.randn_like(observed_data)
-        elif self.model_name=="ConvLSTM":
-            B, _, _ ,_= observed_data.shape # B,H*W,L
-            if is_train != 1:  # for validation
-                t = (torch.ones(B) * set_t).long().to(self.device)
-            else:
-                t = torch.randint(0, self.num_steps, [B]).to(self.device)
-            current_alpha = self.alpha_torch[t].unsqueeze(3)  # (B,1,1)
-            noise = torch.randn_like(observed_data)            
+        
 
-        # B,H*W,L
         noisy_data = (current_alpha ** 0.5) * observed_data + (1.0 - current_alpha) ** 0.5 * noise
-        # (B,2,H*W,L) history pure data + noisy predict data
+        # (B,2,K*C,T) history pure data + noisy predict data
         total_input = self.set_input_to_diffmodel(noisy_data, observed_data, cond_mask) 
 
-        predicted = self.diffmodel(prior,total_input, side_info, t,current_alpha)  # (B,H*W,L)
+        predicted = self.diffmodel(prior,total_input, side_info, t,current_alpha)  # (B,K*C,T)
 
         target_mask = torch.ones_like(cond_mask) - cond_mask
         residual = (noise - predicted) * target_mask
@@ -113,11 +105,11 @@ class  Diff_base(nn.Module):
 
     def set_input_to_diffmodel(self, noisy_data, observed_data, cond_mask):
         if self.is_unconditional == True:
-            total_input = noisy_data.unsqueeze(1)  # (B,1,H*W,L)
+            total_input = noisy_data.unsqueeze(1)  # (B,1,K*C,T)
         else:
             cond_obs = (cond_mask * observed_data).unsqueeze(1) 
             noisy_target = ((1 - cond_mask) * noisy_data).unsqueeze(1)
-            total_input = torch.cat([cond_obs, noisy_target], dim=1)  # (B,2,H*W,L)
+            total_input = torch.cat([cond_obs, noisy_target], dim=1)  # (B,2,K*C,T)
 
         return total_input
 
@@ -125,9 +117,6 @@ class  Diff_base(nn.Module):
         if (self.model_name=="CSDI") or (self.model_name=="STID"):
             B, K, L = observed_data.shape
             imputed_samples = torch.zeros(B, n_samples, K, L).to(self.device)
-        elif self.model_name=="ConvLSTM":
-            B, L, H, W = observed_data.shape
-            imputed_samples = torch.zeros(B, n_samples, H, W, L).to(self.device)
         else:
             raise ValueError(f"Model {self.model_name} not found")
 
@@ -146,11 +135,11 @@ class  Diff_base(nn.Module):
             for t in range(self.num_steps - 1, -1, -1):
                 if self.is_unconditional == True:
                     diff_input = cond_mask * noisy_cond_history[t] + (1.0 - cond_mask) * current_sample
-                    diff_input = diff_input.unsqueeze(1)  # (B,1,K,L)
+                    diff_input = diff_input.unsqueeze(1)  # (B,1,K,T)
                 else:
                     cond_obs = (cond_mask * observed_data).unsqueeze(1)
                     noisy_target = ((1 - cond_mask) * current_sample).unsqueeze(1)
-                    diff_input = torch.cat([cond_obs, noisy_target], dim=1)  # (B,2,K,L)
+                    diff_input = torch.cat([cond_obs, noisy_target], dim=1)  # (B,2,K,T)
                 
                 predicted = self.diffmodel(prior,diff_input, side_info, torch.tensor([t]).to(self.device),self.alpha_torch[t])
 
@@ -166,10 +155,8 @@ class  Diff_base(nn.Module):
                     current_sample += sigma * noise
 
             
-            if self.model_name=="ConvLSTM":
-                imputed_samples[:, i] = current_sample.permute(0,2,3,1).detach()
-            else:
-                imputed_samples[:, i] = current_sample.detach()
+
+            imputed_samples[:, i] = current_sample.detach()
 
         return imputed_samples
 
@@ -193,16 +180,16 @@ class Diff_Forecasting( Diff_base):
 
     def process_data(self, batch):
 
-        observed_data = batch["observed_data"].to(self.device).float() # B,L,H,W
-        observed_tp = batch["timepoints"].to(self.device).float() # B,L,2
-        gt_mask = batch["gt_mask"].to(self.device).float() # B,L,H,W
-        prior= batch["prior"].to(self.device).float() # B,L,H,W
+        observed_data = batch["observed_data"].to(self.device).float() # B,T,K,C
+        observed_tp = batch["timepoints"].to(self.device).float() 
+        gt_mask = batch["gt_mask"].to(self.device).float() # B,T,K,C
+        prior= batch["prior"].to(self.device).float() # B,T,K,C
 
-        B,L,H,W=gt_mask.shape
+        B,T,K,C=gt_mask.shape
         if (self.model_name=="CSDI") or (self.model_name=="STID"):
-            observed_data = rearrange(observed_data,'b l h w -> b (h w) l')
-            gt_mask = rearrange(gt_mask,'b l h w -> b (h w) l')
-            prior=rearrange(prior,'b l h w -> b (h w) l')
+            observed_data = rearrange(observed_data,'b l k c -> b (k c) l')
+            gt_mask = rearrange(gt_mask,'b l k c -> b (k c) l')
+            prior=rearrange(prior,'b l k c -> b (k c) l')
         return (
             observed_data,
             observed_tp,
@@ -215,48 +202,30 @@ class Diff_Forecasting( Diff_base):
     def get_side_info(self, observed_tp, cond_mask):
         if self.model_name=="CSDI":
             B, K, L = cond_mask.shape
-            time_embed_hour = self.time_embedding(observed_tp[:,:,1], self.emb_time_dim-self.emb_time_dim//4)  # (B,L,emb)
-            time_embed_hour = time_embed_hour.unsqueeze(2).expand(-1, -1, self.target_dim, -1) # (B,L,H*W,emb)
+            time_embed_hour = self.time_embedding(observed_tp[:,:,1], self.emb_time_dim-self.emb_time_dim//4)  # (B,T,emb)
+            time_embed_hour = time_embed_hour.unsqueeze(2).expand(-1, -1, self.target_dim, -1) # (B,T,K*C,emb)
         
-            time_embed_day = self.time_embedding(observed_tp[:,:,0], self.emb_time_dim//4)  # (B,L,emb)
-            time_embed_day = time_embed_day.unsqueeze(2).expand(-1, -1, self.target_dim, -1) # (B,L,H*W,emb)
+            time_embed_day = self.time_embedding(observed_tp[:,:,0], self.emb_time_dim//4)  # (B,T,emb)
+            time_embed_day = time_embed_day.unsqueeze(2).expand(-1, -1, self.target_dim, -1) # (B,T,K*C,emb)
         
-            feature_embed = self.embed_layer(torch.arange(self.target_dim).to(self.device))  # (H*W,emb)
-            feature_embed = feature_embed.unsqueeze(0).unsqueeze(0).expand(B, L, -1, -1) #(B,L,H*W,emb)
+            feature_embed = self.embed_layer(torch.arange(self.target_dim).to(self.device))  # (K*C,emb)
+            feature_embed = feature_embed.unsqueeze(0).unsqueeze(0).expand(B, L, -1, -1) #(B,T,K*C,emb)
 
-            side_info = torch.cat([time_embed_hour,time_embed_day, feature_embed], dim=-1)  # (B,L,H*W,*)
-            side_info = side_info.permute(0, 3, 2, 1)  # (B,*,H*W,L)
+            side_info = torch.cat([time_embed_hour,time_embed_day, feature_embed], dim=-1)  # (B,T,K*C,*)
+            side_info = side_info.permute(0, 3, 2, 1)  # (B,*,K*C,T)
             if self.is_unconditional == False:
-                side_mask = cond_mask.unsqueeze(1)  # (B,1,H*W,L)
+                side_mask = cond_mask.unsqueeze(1)  # (B,1,K*C,T)
                 side_info = torch.cat([side_info, side_mask], dim=1)
         elif self.model_name=="STID":
             B, K, L = cond_mask.shape
-            cond_mask=cond_mask.permute(0,2,1).unsqueeze(-1)  # (B,L,N,1)
+            cond_mask=cond_mask.permute(0,2,1).unsqueeze(-1)  
             Points=24 if self.data_name!="MobileSH16" else 96
             time_embed_hour = observed_tp[:,:,1].unsqueeze(2).unsqueeze(3).expand(-1, -1, self.target_dim, -1)/Points
-            time_embed_day = observed_tp[:,:,0].unsqueeze(2).unsqueeze(3).expand(-1, -1, self.target_dim, -1)/7 # (B,L,H*W,1)            
-            side_info = torch.cat([time_embed_hour,time_embed_day], dim=-1)  # (B,L,H*W,2)
+            time_embed_day = observed_tp[:,:,0].unsqueeze(2).unsqueeze(3).expand(-1, -1, self.target_dim, -1)/7             
+            side_info = torch.cat([time_embed_hour,time_embed_day], dim=-1)  # (B,T,K*C,2)
             if self.is_unconditional == False:
-                side_mask = cond_mask #.permute(0,3,2,1)  # (B,L,H*W,1)
-                side_info = torch.cat([side_info, side_mask], dim=-1)  # (B,L,H*W,3) 
-        elif self.model_name=="ConvLSTM":
-            B, L,H,W = cond_mask.shape
-
-            time_embed_hour = self.time_embedding(observed_tp[:,:,1], self.emb_time_dim-self.emb_time_dim//4)  # (B,L,emb)
-            time_embed_hour = time_embed_hour.unsqueeze(2).unsqueeze(2).expand(-1, -1, H,W, -1) # (B,L,H*W,emb)
-        
-            time_embed_day = self.time_embedding(observed_tp[:,:,0], self.emb_time_dim//4)  # (B,L,emb)
-            time_embed_day = time_embed_day.unsqueeze(2).unsqueeze(2).expand(-1, -1, H,W, -1) # (B,L,H*W,emb)
-        
-            feature_embed = self.embed_layer(torch.arange(self.target_dim).to(self.device))  # (H*W,emb)
-            feature_embed = feature_embed.unsqueeze(0).unsqueeze(0).expand(B, L, -1, -1).reshape(B,L,H,W,-1) #(B,L,H,W,emb)
-
-            side_info = torch.cat([time_embed_hour,time_embed_day, feature_embed], dim=-1)  # (B,L,H,W,*)
-            side_info = side_info.permute(0,4,1,2, 3)  # (B,*,H,W,L)
-
-            if self.is_unconditional == False:
-                side_mask = cond_mask.unsqueeze(1)  # (B,1,H*W,L)
-                side_info = torch.cat([side_info, side_mask], dim=1)                       
+                side_mask = cond_mask #.permute(0,3,2,1)  
+                side_info = torch.cat([side_info, side_mask], dim=-1)  # (B,T,K*C,3)                    
         return side_info
 
 
@@ -271,11 +240,12 @@ class Diff_Forecasting( Diff_base):
             gt_mask,
             prior
         ) = self.process_data(batch)
+        # 从370维选取64来训练
 
     
         cond_mask = gt_mask
 
-        side_info = self.get_side_info(observed_tp, cond_mask)  # (B,C_info,H*W,L)
+        side_info = self.get_side_info(observed_tp, cond_mask)  # (B,C_info,K*C,T)
 
         loss_func = self.calc_loss if is_train == 1 else self.calc_loss_valid
 
