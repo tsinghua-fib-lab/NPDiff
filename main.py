@@ -1,7 +1,6 @@
 import argparse
 import torch
 import os
-# from main_model import CSDI_Forecasting
 from model.Diffusion import Diff_Forecasting
 from data.data_load import load_dataset
 from utils import train,evaluate
