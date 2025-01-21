@@ -1,6 +1,6 @@
-# WWW25-submission-1670
+# IJCAI25-submission-2428
 
-This is the official implementation of our WWW25 submission: **NPDiff: A General Noise Prior Framework for Diffusion Model-based Mobile Traffic Prediction**.
+This is the official implementation of our IJCAI25 submission: **NPDiff: A General Noise Prior Framework for Diffusion Model-based Mobile Traffic Prediction**.
 
 -----
 
