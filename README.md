@@ -1,4 +1,4 @@
-# IJCAI25-submission-2428
+# IJCAI25(accepted)
 
 This is the official implementation of our IJCAI25 submission: **Unveiling the Power of Noise Priors: Enhancing Diffusion Models for  Mobile Traffic Prediction**.
 
